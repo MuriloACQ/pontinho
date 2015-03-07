@@ -1,5 +1,5 @@
 <?php
-namespace exec;
+namespace scripts;
 use classes\StandardRequestProcessor;
 require_once 'classes/StandardRequestProcessor.php';
 
