@@ -14,7 +14,7 @@ $requiredParams = array('usuario', 'senha');
 $processFunction = function(LiteRequestProcessor $liteProcessor) {
 	$params = $liteProcessor->getParams();
 	$db = new DatabaseQueries($liteProcessor->getMysqlLink());
-	$db->cadastrar($params->get('usuario'), $params->get('senha'));
+	$db->login($params->get('usuario'), $params->get('senha'));
 };
 
 $requestProcessor = new StandardRequestProcessor($methods, $requiredParams, $processFunction);

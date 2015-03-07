@@ -2,6 +2,8 @@
 namespace classes;
 require_once 'classes/RequestHandler.php';
 require_once 'classes/RequiredParamsValidator.php';
+require_once 'classes/DatabaseConfig.php';
+require_once 'classes/LiteRequestProcessor.php';
 header('Content-Type: application/json');
 
 class StandardRequestProcessor {
@@ -12,11 +14,16 @@ class StandardRequestProcessor {
 	private $methods;
 	private $requiredParams;
 	private $processFunction;
+	private $mysqlLink;
 	
 	public function __construct($methods, $requiredParams, \Closure $processFunction) {
 		$this->methods = $methods;
 		$this->requiredParams = $requiredParams;
 		$this->processFunction = $processFunction;
+		$this->mysqlLink = mysql_connect(DatabaseConfig::host, DatabaseConfig::user, DatabaseConfig::pass);
+		if (!$this->mysqlLink) {
+			die('Nao foi possivel conectar: ' . mysql_error());
+		}
 	}
 	
 	public function process() {
@@ -26,7 +33,8 @@ class StandardRequestProcessor {
 			$this->validator = new RequiredParamsValidator($this->requiredParams);
 			if($this->validator->validate($this->params)){
 				$process = $this->processFunction;
-				$process();
+				$process(new LiteRequestProcessor($this));
+				mysql_close($this->mysqlLink);
 			} else {
 				echo '{erro: '.$this->validator->getErroMsg().'}';
 			}
@@ -36,7 +44,11 @@ class StandardRequestProcessor {
 	}
 	
 	public function getParams(){
-		$this->params;
+		return $this->params;
+	}
+	
+	public function getMysqlLink() {
+		return $this->mysqlLink;
 	}
 	
 }

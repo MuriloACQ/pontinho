@@ -9,12 +9,12 @@ require_once 'classes/LiteRequestProcessor.php';
 require_once 'classes/DatabaseQueries.php';
 
 $methods = array('get', 'post');
-$requiredParams = array('usuario', 'senha');
+$requiredParams = array('token');
 
 $processFunction = function(LiteRequestProcessor $liteProcessor) {
 	$params = $liteProcessor->getParams();
 	$db = new DatabaseQueries($liteProcessor->getMysqlLink());
-	$db->cadastrar($params->get('usuario'), $params->get('senha'));
+	$db->logout($params->get('token'));
 };
 
 $requestProcessor = new StandardRequestProcessor($methods, $requiredParams, $processFunction);
