@@ -22,7 +22,7 @@ class StandardRequestProcessor {
 		$this->processFunction = $processFunction;
 		$this->mysqlLink = mysql_connect(DatabaseConfig::host, DatabaseConfig::user, DatabaseConfig::pass);
 		if (!$this->mysqlLink) {
-			die('Nao foi possivel conectar: ' . mysql_error());
+			die(mysql_error());
 		}
 	}
 	
@@ -33,7 +33,13 @@ class StandardRequestProcessor {
 			$this->validator = new RequiredParamsValidator($this->requiredParams);
 			if($this->validator->validate($this->params)){
 				$process = $this->processFunction;
-				$process(new LiteRequestProcessor($this));
+				mysql_query('BEGIN', $this->mysqlLink);
+				$result = $process(new LiteRequestProcessor($this));
+				if($result) {
+					mysql_query('COMMIT', $this->mysqlLink);
+				} else {
+					mysql_query('ROLLBACK', $this->mysqlLink);
+				}
 				mysql_close($this->mysqlLink);
 			} else {
 				echo '{erro: '.$this->validator->getErroMsg().'}';

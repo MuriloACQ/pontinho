@@ -9,12 +9,13 @@ require_once 'classes/LiteRequestProcessor.php';
 require_once 'classes/DatabaseQueries.php';
 
 $methods = array('get', 'post');
-$requiredParams = array('token');
+$requiredParams = array('token', 'capacidade', 'fichas', 'timeout');
 
 $processFunction = function(LiteRequestProcessor $liteProcessor) {
 	$params = $liteProcessor->getParams();
 	$db = new DatabaseQueries($liteProcessor->getMysqlLink());
-	return $db->logout($params->get('token'));
+	return $db->criarJogo($params->get('token'), $params->get('capacidade'),
+			$params->get('fichas'), $params->get('timeout'));
 };
 
 $requestProcessor = new StandardRequestProcessor($methods, $requiredParams, $processFunction);
