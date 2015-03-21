@@ -1,6 +1,7 @@
 <?php
 namespace classes;
 require_once 'classes/Usuario.php';
+require_once 'classes/Jogo.php';
 
 class DatabaseQueries {
 	private $mysqlLink;
@@ -52,6 +53,7 @@ class DatabaseQueries {
 	public function criarJogo($token, $capacidade, $fichas, $timeout) {
 		$this->tokenCollectGarbage();
 		$usuario = $this->getUserByToken($token);
+		if(!$usuario) return; //condicional break
 		$result = mysql_db_query(DatabaseConfig::name, "SELECT id FROM jogo WHERE usuario = '".$usuario->getId()."' AND status = 0",
 				$this->mysqlLink);
 		if(!$this->proxy($result)) return; //condicional break
@@ -77,21 +79,19 @@ class DatabaseQueries {
 	public function entrarJogo($token, $jogoId) {
 		$this->tokenCollectGarbage();
 		$usuario = $this->getUserByToken($token);
-		$result = mysql_db_query(DatabaseConfig::name, "SELECT * FROM jogo WHERE id = '$jogoId'",
-				$this->mysqlLink);
-		if(!$this->proxy($result)) return; //condicional break
-		$jogo = mysql_fetch_assoc($result);
-		if(!$this->validate($jogo, 'jogo invalido')) return; //condicional break
-		if(!$this->validate($jogo['status'] != 0, 'impossivel entrar no jogo')) return; //condicional break
-		if(!$this->validate($jogo['fichas'] <= $usuario->getFichas(), 'nao possui fichas suficientes')) return; //condicional break
+		if(!$usuario) return; //condicional break
+		$jogo = $this->getJogoById($jogoId);
+		if(!$jogo) return; //condicional break
+		if(!$this->validate($jogo->getStatus() !== 0, 'impossivel entrar no jogo')) return; //condicional break
+		if(!$this->validate($jogo->getFichas() <= $usuario->getFichas(), 'nao possui fichas suficientes')) return; //condicional break
 		$result = mysql_db_query(DatabaseConfig::name, "SELECT * FROM jogo_participante WHERE jogo = '$jogoId'",
 				$this->mysqlLink);
 		if(!$this->proxy($result)) return; //condicional break
-		if(!$this->validate(mysql_num_rows($result) < $jogo['capacidade'], 'maximo de '.$jogo['capacidade'].' jogadores atingido')) return; //condicional break
+		if(!$this->validate(mysql_num_rows($result) < $jogo->getCapacidade(), 'maximo de '.$jogo->getCapacidade().' jogadores atingido')) return; //condicional break
 		$result = mysql_db_query(DatabaseConfig::name, "INSERT INTO jogo_participante (jogo, usuario) VALUES ('$jogoId', '".$usuario->getId()."')",
 				$this->mysqlLink);
 		if(!$this->proxy($result)) return; //condicional break
-		$usuario->setFichas($usuario->getFichas() - $jogo['fichas']);
+		$usuario->setFichas($usuario->getFichas() - $jogo->getFichas());
 		$this->updateFichas($usuario);
 		echo 'sucesso';
 		return true;
@@ -100,19 +100,17 @@ class DatabaseQueries {
 	public function sairJogo($token, $jogoId) {
 		$this->tokenCollectGarbage();
 		$usuario = $this->getUserByToken($token);
-		$result = mysql_db_query(DatabaseConfig::name, "SELECT * FROM jogo WHERE id = '$jogoId'",
-				$this->mysqlLink);
-		if(!$this->proxy($result)) return; //condicional break
-		$jogo = mysql_fetch_assoc($result);
-		if(!$this->validate($jogo, 'jogo invalido')) return; //condicional break
-		if(!$this->validate($jogo['status'] != 0, 'impossivel sair do jogo')) return; //condicional break
-		if(!$this->validate($usuario->getId() != $jogo['usuario'], 'impossivel sair do proprio jogo')) return; //condicional break
+		if(!$usuario) return; //condicional break
+		$jogo = $this->getJogoById($jogoId);
+		if(!$jogo) return; //condicional break
+		if(!$this->validate($jogo->getStatus() !== 0, 'impossivel sair do jogo')) return; //condicional break
+		if(!$this->validate($usuario->getId() != $jogo->getDono()->getId(), 'impossivel sair do proprio jogo')) return; //condicional break
 		$result = mysql_db_query(DatabaseConfig::name, "SELECT usuario FROM jogo WHERE id = '$jogoId' AND usuario = '".$usuario->getId()."'",
 				$this->mysqlLink);
 		if(!$this->proxy($result)) return; //condicional break
 		$row = mysql_fetch_row($result);
 		if(!$this->validate($row, 'usuario nao participante do jogo')) return; //condicional break
-		$usuario->setFichas($usuario->getFichas()+$jogo['fichas']);
+		$usuario->setFichas($usuario->getFichas()+$jogo->getFichas());
 		$this->updateFichas($usuario);
 		$result = mysql_db_query(DatabaseConfig::name, "DELETE FROM jogo_participante WHERE jogo = '$jogoId' AND usuario = '".$usuario->getId()."'",
 				$this->mysqlLink);
@@ -124,15 +122,20 @@ class DatabaseQueries {
 	public function excluirJogo($token, $jogoId) {
 		$this->tokenCollectGarbage();
 		$usuario = $this->getUserByToken($token);
-		$result = mysql_db_query(DatabaseConfig::name, "SELECT * FROM jogo WHERE id = '$jogoId'",
+		if(!$usuario) return; //condicional break
+		$jogo = $this->getJogoById($jogoId, true);
+		if(!$jogo) return; //condicional break
+		if(!$this->validate($jogo->getStatus() !== 0, 'impossivel excluir jogo')) return; //condicional break
+		if(!$this->validate($usuario->getId() == $jogo->getDono()->getId(), 'impossivel excluir que nao criou')) return; //condicional break
+		foreach ($jogo->getJogadores() as $jogador) {
+			$jogador->setFichas($jogador->getFichas() + $jogo->getFichas());
+			$this->updateFichas($jogador);
+		}
+		$result = mysql_db_query(DatabaseConfig::name, "DELETE FROM jogo WHERE id = '$jogoId'",
 				$this->mysqlLink);
 		if(!$this->proxy($result)) return; //condicional break
-		$jogo = mysql_fetch_assoc($result);
-		if(!$this->validate($jogo, 'jogo invalido')) return; //condicional break
-		if(!$this->validate($jogo['status'] != 0, 'impossivel excluir jogo')) return; //condicional break
-		if(!$this->validate($usuario->getId() == $jogo['usuario'], 'impossivel excluir que nao criou')) return; //condicional break
-		//TODO acrescentar fichas a todos os participantes
-		//TODO Excluir jogo
+		echo 'sucesso';
+		return true;
 	}
 	
 	public function tokenRefresh($token) {
@@ -167,9 +170,49 @@ class DatabaseQueries {
 		return new Usuario($usuario['id'], $usuario['username'], $usuario['fichas']);
 	}
 	
+	private function getUserById($id) {
+		$result = mysql_db_query(DatabaseConfig::name, "SELECT * FROM usuario WHERE id = '$id'",
+				$this->mysqlLink);
+		if(!$this->proxy($result)) return; //condicional break
+		$usuario = mysql_fetch_assoc($result);
+		if(!$this->validate($usuario, 'usuario invalido')) return; //condicional break
+		return new Usuario($usuario['id'], $usuario['username'], $usuario['fichas']);
+	}
+	
+	private function getJogoById($jogoId, $fetchJogadores = false) {
+		$result = mysql_db_query(DatabaseConfig::name, "SELECT * FROM jogo WHERE id = '$jogoId'",
+				$this->mysqlLink);
+		if(!$this->proxy($result)) return; //condicional break
+		$jogo = mysql_fetch_assoc($result);
+		if(!$this->validate($jogo, 'jogo invalido')) return; //condicional break
+		$jogadores = null;
+		if($fetchJogadores) {
+			$jogadores = $this->getJogadoresByJogoId($jogoId);
+			if(!$jogadores) return; //condicional break
+		}
+		return new Jogo($jogo['id'], $this->getUserById($jogo['usuario']), $jogo['capacidade'], $jogo['fichas'], $jogo['timeout'], $jogo['status'], $jogadores);
+	}
+	
+	private function getJogadoresByJogoId($jogoId) {
+		$result = mysql_db_query(DatabaseConfig::name, "SELECT usuario.id, username, fichas FROM jogo_participante INNER JOIN usuario ON jogo_participante.usuario = usuario.id WHERE jogo_participante.jogo = $jogoId",
+				$this->mysqlLink);
+		if(!$this->proxy($result)) return; //condicional break
+		$jogadores = array();
+		while($jogador = mysql_fetch_assoc($result)){
+			$jogadores[] = $jogador;
+		}
+		if(!$this->validate($jogadores, 'jogo invalido')) return; //condicional break
+		$jogadoresUsuarios = array();
+		foreach ($jogadores as $jogador) {
+			$jogadoresUsuarios[] = new Usuario($jogador['id'], $jogador['username'], $jogador['fichas']);
+		}
+		return $jogadoresUsuarios;
+	}
+	
 	private function updateFichas(Usuario $usuario) {
 		$result = mysql_db_query(DatabaseConfig::name, "UPDATE usuario SET fichas = '".$usuario->getFichas()."' WHERE id = '".$usuario->getId()."'",
 				$this->mysqlLink);
 		$this->proxy($result);
 	}
+	
 }
