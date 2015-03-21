@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Máquina: 127.0.0.1
--- Data de Criação: 15-Mar-2015 às 15:18
+-- Data de Criação: 21-Mar-2015 às 20:06
 -- Versão do servidor: 5.5.32
 -- versão do PHP: 5.4.16
 
@@ -71,13 +71,6 @@ CREATE TABLE IF NOT EXISTS `jogo` (
   KEY `status` (`status`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=7 ;
 
---
--- Extraindo dados da tabela `jogo`
---
-
-INSERT INTO `jogo` (`id`, `capacidade`, `fichas`, `usuario`, `status`, `timeout`) VALUES
-(6, 2, 2, 1, 0, 10);
-
 -- --------------------------------------------------------
 
 --
@@ -89,15 +82,8 @@ CREATE TABLE IF NOT EXISTS `jogo_participante` (
   `usuario` int(11) NOT NULL,
   `resultado` tinyint(4) NOT NULL DEFAULT '0',
   PRIMARY KEY (`jogo`,`usuario`),
-  KEY `usuario` (`usuario`)
+  KEY `jogo_participante_ibfk_2` (`usuario`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
---
--- Extraindo dados da tabela `jogo_participante`
---
-
-INSERT INTO `jogo_participante` (`jogo`, `usuario`, `resultado`) VALUES
-(6, 1, 0);
 
 -- --------------------------------------------------------
 
@@ -119,8 +105,8 @@ CREATE TABLE IF NOT EXISTS `token` (
 --
 
 INSERT INTO `token` (`id`, `usuario`, `timestamp`) VALUES
-('273fbc8de9597eff4918f40153b0c451', 1, '2015-03-15 03:03:22'),
-('e485dee31bd00adf29862a059fc2c8b6', 2, '2015-03-15 03:28:17');
+('9fea16eaad4fdb8a6ca8e0cadbfb7711', 1, '2015-03-21 02:11:44'),
+('b12e7e3275c32a4e056b100c39a5f07e', 2, '2015-03-21 00:55:54');
 
 -- --------------------------------------------------------
 
@@ -142,8 +128,8 @@ CREATE TABLE IF NOT EXISTS `usuario` (
 --
 
 INSERT INTO `usuario` (`id`, `username`, `senha`, `fichas`) VALUES
-(1, 'murilo', '1015745', 18),
-(2, 'thalita', '12345', 22);
+(1, 'murilo', '1015745', 20),
+(2, 'thalita', '12345', 20);
 
 --
 -- Constraints for dumped tables
@@ -173,8 +159,8 @@ ALTER TABLE `jogo`
 -- Limitadores para a tabela `jogo_participante`
 --
 ALTER TABLE `jogo_participante`
-  ADD CONSTRAINT `jogo_participante_ibfk_1` FOREIGN KEY (`jogo`) REFERENCES `jogo` (`id`),
-  ADD CONSTRAINT `jogo_participante_ibfk_2` FOREIGN KEY (`usuario`) REFERENCES `usuario` (`id`);
+  ADD CONSTRAINT `jogo_participante_ibfk_2` FOREIGN KEY (`usuario`) REFERENCES `usuario` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `jogo_participante_ibfk_1` FOREIGN KEY (`jogo`) REFERENCES `jogo` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
