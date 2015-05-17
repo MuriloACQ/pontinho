@@ -13,8 +13,9 @@ class RequestParams {
 	
 	public function get($name) {
 		$param = null;
-		if(isset($this->params[$name]))
+		if(isset($this->params[$name])){
 			$param = mysql_real_escape_string($this->params[$name]);
+		}
 		return $param;
 	}
 }

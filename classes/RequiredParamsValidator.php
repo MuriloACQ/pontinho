@@ -14,7 +14,7 @@ class RequiredParamsValidator {
 	public function validate(RequestParams $params) {
 		$this->erroMsg = '';
 		foreach ($this->parametros as $parametro) {
-			if(!$params->get($parametro)){
+			if(!$params->get($parametro) && $params->get($parametro) !== '0'){
 				$this->erroMsg .= "$parametro e obrigatorio & ";
 			}
 		}

@@ -2,6 +2,9 @@
 namespace classes;
 class Jogo {
 	
+	const STATUS_CRIADO = 0;
+	const STATUS_INICIADO = 1;
+	
 	private $id;
 	private $usuarioDono;
 	private $capacidade;
