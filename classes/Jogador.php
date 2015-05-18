@@ -6,13 +6,15 @@ class Jogador {
 	private $fichas;
 	private $mao;
 	private $vez;
+	private $timestamp;
 	
-	public function __construct(Usuario $usuario, $fichas, $mao, $vez) {
+	public function __construct(Usuario $usuario, $fichas, $mao, $vez, $timestamp) {
 
 		$this->usuario = $usuario;
 		$this->fichas = $fichas;
 		$this->mao = $mao;
 		$this->vez = $vez;
+		$this->timestamp = $timestamp;
 	}
 	
 	public function getId() {
@@ -37,6 +39,10 @@ class Jogador {
 	
 	public function getVez() {
 		return $this->vez;
+	}
+	
+	public function getTimestamp() {
+		return $this->timestamp;
 	}
 }
 ?>

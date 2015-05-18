@@ -238,14 +238,14 @@ class DatabaseQueries {
 		if(!$this->validate($jogo, 'jogo invalido')) return; //condicional break
 		$jogadores = null;
 		if($fetchJogadores) {
-			$jogadores = $this->getJogadoresByJogoId($jogoId);
+			$jogadores = $this->getUsuariosByJogoId($jogoId);
 			if(!$jogadores) return; //condicional break
 		}
 		return new Jogo($jogo['id'], $this->getUserById($jogo['usuario']), $jogo['capacidade'], $jogo['fichas'], $jogo['timeout'], $jogo['status'], $jogadores);
 	}
 	
-	private function getJogadoresByJogoId($jogoId) {
-		$result = mysql_db_query(DatabaseConfig::name, "SELECT usuario.id, username, fichas FROM jogo_participante INNER JOIN usuario ON jogo_participante.usuario = usuario.id WHERE jogo_participante.jogo = $jogoId",
+	private function getUsuariosByJogoId($jogoId) {
+		$result = mysql_db_query(DatabaseConfig::name, "SELECT usuario.id as id, username, fichas FROM jogo_participante INNER JOIN usuario ON jogo_participante.usuario = usuario.id WHERE jogo_participante.jogo = $jogoId",
 				$this->mysqlLink);
 		if(!$this->proxy($result)) return; //condicional break
 		$jogadores = array();
@@ -258,6 +258,43 @@ class DatabaseQueries {
 			$jogadoresUsuarios[] = new Usuario($jogador['id'], $jogador['username'], $jogador['fichas']);
 		}
 		return $jogadoresUsuarios;
+	}
+	
+	private  function getJogadoresById($jogoId) {
+		$result = mysql_db_query(DatabaseConfig::name, "SELECT usuario.id as id, username, usuario.fichas as fichas_usuario, jogando_participante.fichas as fichas_partida, cartas, timestamp,
+		(SELECT usuario_vez FROM jogando WHERE jogo = $jogoId) as vez
+			FROM jogando_participante INNER JOIN usuario ON jogando_participante.usuario = usuario.id
+			INNER JOIN jogo ON jogo.id = jogando_participante.jogo WHERE jogo = $jogoId AND
+			timeout = 0 OR
+			timestamp >= DATE_SUB(NOW(), INTERVAL timeout MINUTE)",
+				$this->mysqlLink);
+		if(!$this->proxy($result)) return; //condicional break
+		$jogadores = array();
+		while($jogador = mysql_fetch_assoc($result)){
+			$jogadores[] = $jogador;
+		}
+		if(!$this->validate($jogadores, 'jogo invalido')) return; //condicional break
+		$jogadoresObjs = array();
+		foreach ($jogadores as $jogador) {
+			$jogadoresObjs[] = new Jogador(new Usuario($jogador['id'], $jogador['username'], $jogador['fichas_usuario']),
+					 $jogador['fichas_partida'], explode(',', $jogador['cartas']), $jogador['vez'] == $jogador['id'], strtotime($jogador['timestamp']));
+		}
+		return $jogadoresObjs;
+	}
+	
+	//TODO private
+	public function getJogandoById($jogoId) {
+		$jogo = $this->getJogoById($jogoId, true);
+		if(!$jogo) return; //condicional break
+		$jogadores = $this->getJogadoresById($jogoId);
+		if(!$jogadores) return; //condicional break
+		$result = mysql_db_query(DatabaseConfig::name, "SELECT cartas_mesa, fichas FROM jogando WHERE jogo = $jogoId",
+				$this->mysqlLink);
+		if(!$this->proxy($result)) return; //condicional break
+		$jogando = mysql_fetch_assoc($result);
+		if(!$this->validate($jogando, 'jogo invalido')) return; //condicional break
+		$jogandoFactory = new JogandoFactory($jogo, $jogadores, explode(',', $jogando['cartas_mesa']), $jogando['fichas']);
+		return $jogandoFactory->getJogando();
 	}
 	
 	private function updateFichas(Usuario $usuario) {

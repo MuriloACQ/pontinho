@@ -20,8 +20,20 @@ class JogandoFactory {
 	
 	private $jogando;
 	
-	public function __construct(Jogo $jogo) {
+	public function __construct(Jogo $jogo, $jogadores = null, $mesa = null, $fichas = null) {
 		
+		if($jogadores !== null && $mesa !== null && $fichas !== null) {
+			$this->recuperarJogando($jogo, $jogadores, $mesa, $fichas);
+		} else {
+			$this->createNewJogando($jogo);
+		}
+	}
+	
+	public function getJogando() {
+		return $this->jogando;
+	}
+	
+	private function createNewJogando(Jogo $jogo) {
 		$numJogadores = count($jogo->getJogadores());
 		$resto = 52%$numJogadores;
 		for($i=0;$i<$resto;$i++) {
@@ -36,7 +48,7 @@ class JogandoFactory {
 				$cartas = array_slice($this->cards, $offset, $numCartas);
 				$offset+= $numCartas;
 				sort($cartas);
-				$jogadorObj = new Jogador($jogador, $jogo->getFichas(), $cartas, in_array('107', $cartas));
+				$jogadorObj = new Jogador($jogador, $jogo->getFichas(), $cartas, in_array('107', $cartas), time());
 				$arrayJogadores[] = $jogadorObj;
 				if($jogadorObj->getVez()) $jogadorVezId = $jogadorObj->getId();
 			}
@@ -44,8 +56,24 @@ class JogandoFactory {
 		}
 	}
 	
-	public function getJogando() {
-		return $this->jogando;
+	private function recuperarJogando(Jogo $jogo, $jogadores, $mesa, $fichas) {
+		$jogadorVezId = null;
+		foreach ($jogadores as $jogador) {
+			if($jogador->getVez()){ $jogadorVezId = $jogador->getId(); break;}
+		}
+		$timeouts = array();
+		if(count($jogo->getJogadores()) > count($jogadores)) {
+			foreach ($jogo->getJogadores() as $usuario) {
+				$timeout = true;
+				foreach ($jogadores as $jogador) {
+					if($usuario->getId() == $jogador->getId()) {
+						$timeout = false; break;
+					}
+				}
+				if($timeout) $timeouts[] = $usuario;
+			}
+		}
+		$this->jogando = new Jogando($jogo, $jogadores, $mesa, $fichas, $jogadorVezId, $timeouts);
 	}
 	
 }
