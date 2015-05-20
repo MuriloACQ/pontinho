@@ -4,6 +4,7 @@ class Jogo {
 	
 	const STATUS_CRIADO = 0;
 	const STATUS_INICIADO = 1;
+	const STATUS_CONCLUIDO = 2;
 	
 	private $id;
 	private $usuarioDono;

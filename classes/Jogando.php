@@ -53,21 +53,22 @@ class Jogando {
 		$jogando['status'] = $this->jogo->getStatus();
 		$jogando['mesa'] = $this->mesa;
 		$jogando['minhaVez'] = $userId == $this->vez;
-		$jogando['vez'] = $this->getUsernameById($this->vez);
+		$jogando['vez'] = $this->getJogadorById($this->vez)->getUsername();
 		$jogando['jogadores'] = $this->getJogadoresPublicInfo();
 		$jogando['montanteFichas'] = $this->fichas;
 		$jogando['timeouts'] = $this->getTimeoutsPublicInfo();
+		$jogando['resultado'] = $this->getResultadoById($userId);
 		return $jogando;
 	}
 	
-	private function getUsernameById($id) {
-		$username = null;
+	private function getJogadorById($id) {
+		$player = null;
 		foreach ($this->jogadores as $jogador) {
 			if($jogador->getid() == $id) {
-				$username = $jogador->getUsername(); break;
+				$player = $jogador; break;
 			}
 		}
-		return $username;
+		return $player;
 	}
 	
 	private function getJogadoresPublicInfo() {
@@ -88,6 +89,14 @@ class Jogando {
 			$timeouts[] = $timeout->getUsername();
 		}
 		return $timeouts;
+	}
+	
+	private function getResultadoById($id) {
+		$resultado = null;
+		if($this->jogo->getStatus() == Jogo::STATUS_CONCLUIDO) {
+			$resultado = count($this->getJogadorById($id)->getMao) ? 'perdeu' : 'ganhou';
+		}
+		return $resultado;
 	}
 }
 
