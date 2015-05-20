@@ -189,8 +189,35 @@ class DatabaseQueries {
 		return true;
 	}
 	
+	public function retrieveJogo($token, $jogoId) {
+		$this->tokenCollectGarbage();
+		$usuario = $this->getUserByToken($token);
+		if(!$usuario) return; //condicional break
+		$jogando = $this->getJogandoById($jogoId);
+		if(!$jogando) return; //condicional break
+		$isPlayer = false;
+		foreach ($jogando->getJogo()->getJogadores() as $jogador) {
+			if($jogador->getId() == $usuario->getId()) {
+				$isPlayer = true; break;
+			}
+		}
+		if(!$this->validate($isPlayer, "jogo invalido")) return; //condicional break
+		foreach ($jogando->getTimeouts() as $timeout) {
+			if(!$this->validate($timeout->getId() !== $usuario->getId(), "jogador com timeout")) return; //condicional break
+		}
+		if(!$this->jogandoRefresh($jogoId, $usuario->getId())) return; //condicional break
+		echo json_encode($jogando->getJogandoByUserId($usuario->getId()));
+		return true;
+	}
+	
 	public function tokenRefresh($token) {
 		$result = mysql_db_query(DatabaseConfig::name, "UPDATE token SET timestamp = now() WHERE id = '$token'",
+				$this->mysqlLink);
+		return $this->proxy($result);
+	}
+	
+	public function jogandoRefresh($jogoId, $usuarioId) {
+		$result = mysql_db_query(DatabaseConfig::name, "UPDATE jogando_participante SET timestamp = now() WHERE jogo = '$jogoId' AND usuario = '$usuarioId'",
 				$this->mysqlLink);
 		return $this->proxy($result);
 	}

@@ -73,6 +73,7 @@ class JogandoFactory {
 				if($timeout) $timeouts[] = $usuario;
 			}
 		}
+		if($mesa && !$mesa[0]) $mesa = array(); //avoiding empty string array
 		$this->jogando = new Jogando($jogo, $jogadores, $mesa, $fichas, $jogadorVezId, $timeouts);
 	}
 	
