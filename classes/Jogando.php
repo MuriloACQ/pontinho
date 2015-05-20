@@ -94,7 +94,7 @@ class Jogando {
 	private function getResultadoById($id) {
 		$resultado = null;
 		if($this->jogo->getStatus() == Jogo::STATUS_CONCLUIDO) {
-			$resultado = count($this->getJogadorById($id)->getMao) ? 'perdeu' : 'ganhou';
+			$resultado = count($this->getJogadorById($id)->getMao()) ? 'perdeu' : 'ganhou';
 		}
 		return $resultado;
 	}
